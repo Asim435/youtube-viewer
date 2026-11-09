@@ -1,0 +1,61 @@
+name: YouTube Viewer Bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'YouTube Video or Short URL'
+        required: true
+        default: 'https://www.youtube.com/shorts/bySRBvNJeec'
+        type: string
+      total_views:
+        description: 'Total Number of Views to Generate'
+        required: true
+        default: '50'
+        type: string
+      watch_duration:
+        description: 'Watch duration per view (seconds)'
+        required: true
+        default: '20'
+        type: string
+      batch_count:
+        description: 'Parallel browser instances (1 to 5)'
+        required: true
+        default: '2'
+        type: string
+
+jobs:
+  run-viewer:
+    runs-on: ubuntu-latest
+    name: Run Views Generator
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install System Dependencies & Tor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tor ca-certificates fonts-liberation
+
+      - name: Install Project Dependencies
+        run: npm install
+
+      - name: Configure Target URL
+        run: |
+          echo "${{ inputs.video_url }}" > urls.txt
+          echo "Target URL set to:"
+          cat urls.txt
+
+      - name: Run YouTube Viewer
+        env:
+          TOTAL_COUNT: ${{ inputs.total_views }}
+          VIEW_DURATION: ${{ inputs.watch_duration }}
+          BATCH_COUNT: ${{ inputs.batch_count }}
+        run: |
+          node index

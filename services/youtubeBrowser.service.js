@@ -7,8 +7,12 @@ const { logger } = require('../utils');
 const { VIEW_ACTION_COUNT, IP_GETTER_URL, PAGE_DEFAULT_TIMEOUT } = require('../utils/constants');
 
 const getCurrentIP = async (page) => {
-  await page.goto(IP_GETTER_URL, { waitUntil: 'load' });
-  return page.$eval('body', (body) => body.innerText);
+  try {
+    await page.goto(IP_GETTER_URL, { waitUntil: 'domcontentloaded', timeout: 10000 });
+    return await page.$eval('body', (body) => body.innerText.trim());
+  } catch (_) {
+    return 'Direct-IP';
+  }
 };
 
 const handlePageCrash = (page) => (error) => {

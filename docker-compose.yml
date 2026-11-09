@@ -1,6 +1,6 @@
-version:  '3'
 services: 
   ytview:
     build:
       context: .
+      network: host
     restart: unless-stopped

@@ -19,12 +19,36 @@ const logFailedAttempt = (url, ipAddr) => {
 
 const logCount = async (page, url, ipAddr, duration) => {
   try {
-    const currentLiveViewCount = await page.$eval('.view-count', (viewCountNode) => viewCountNode.innerText.replace(/[^0-9]/g, ''));
-    if (!store[url]) store[url] = { initial: currentLiveViewCount };
-    store[url].current = currentLiveViewCount;
-    store[url].added = store[url].current - store[url].initial;
-    success(`Attempted ${url} with IP: ${ipAddr} for ${duration} seconds. (Init View Count: ${store[url].initial} Current View Count: ${store[url].current} Views added this session: ${store[url].added})`);
-  } catch {
+    const selectors = [
+      '.view-count',
+      'ytd-video-view-count-renderer span',
+      '#count .ytd-video-view-count-renderer',
+      '#info span.view-count',
+      '#description-inner #count',
+      'span.bold.yt-formatted-string',
+    ];
+    let currentLiveViewCount = null;
+    for (const sel of selectors) {
+      try {
+        const text = await page.$eval(sel, (node) => node.innerText);
+        const digits = text ? text.replace(/[^0-9]/g, '') : '';
+        if (digits) {
+          currentLiveViewCount = digits;
+          break;
+        }
+      } catch (_) {}
+    }
+
+    if (currentLiveViewCount) {
+      if (!store[url]) store[url] = { initial: currentLiveViewCount };
+      store[url].current = currentLiveViewCount;
+      store[url].added = store[url].current - store[url].initial;
+      success(`Attempted ${url} with IP: ${ipAddr} for ${duration} seconds. (Init View Count: ${store[url].initial} Current View Count: ${store[url].current} Views added this session: ${store[url].added})`);
+    } else {
+      success(`Attempted ${url} with IP: ${ipAddr} for ${duration} seconds. Video played successfully.`);
+    }
+  } catch (err) {
+    debug(err);
     logFailedAttempt(url, ipAddr);
   }
 };

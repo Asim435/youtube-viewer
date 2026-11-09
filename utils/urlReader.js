@@ -10,7 +10,15 @@ const logger = require('./logger');
 const urlReader = (filename) => {
   try {
     const fileContents = _toString(fs.readFileSync(path.resolve(process.cwd(), filename)));
-    const urlArray = _compact(fileContents.split('\n'));
+    const urlArray = _compact(fileContents.split('\n').map((u) => {
+      const clean = u.trim();
+      if (!clean) return null;
+      const shortsMatch = clean.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
+      if (shortsMatch && shortsMatch[1]) {
+        return `https://www.youtube.com/watch?v=${shortsMatch[1]}`;
+      }
+      return clean;
+    }));
     if (_isEmpty(urlArray)) throw new Error(`No urls found. Make sure ${filename} contains at least one url to proceed`);
     return urlArray;
   } catch (error) {

@@ -3,27 +3,27 @@ const { execWithPromise } = require('../utils/childProcessWrapper');
 const { logger } = require('../utils');
 const { IS_PROD } = require('../utils/constants');
 
+const fs = require('fs');
+
 const writeTorConfig = async (startPort, count) => {
   if (!IS_PROD) return Promise.resolve();
   logger.info('App running in production. Will use rotating proxy via TOR.');
   logger.info(' Writing Tor Config');
-  await execWithPromise('touch /etc/tor/torrc && echo > /etc/tor/torrc');
-  const promiseArr = [];
-  for (let i = 0; i < count; i += 1) {
-    const port = startPort + i;
-    promiseArr.push(
-      execWithPromise(
-        `echo "SocksPort ${port}" >> /etc/tor/torrc`,
-      ).then(() => logger.debug(`PORT ${port} written in tor config`)),
-    );
-  }
-  return Promise.all(promiseArr).then(() => {
+  try {
+    let config = '';
+    for (let i = 0; i < count; i += 1) {
+      const port = startPort + i;
+      config += `SocksPort ${port}\n`;
+    }
+    fs.mkdirSync('/etc/tor', { recursive: true });
+    fs.writeFileSync('/etc/tor/torrc', config);
     logger.success('Tor Config written successfully.');
-  }).catch((error) => {
-    logger.error('One or more ports couldn\'t be written into tor config.');
+    return Promise.resolve();
+  } catch (error) {
+    logger.error('Failed to write Tor config.');
     logger.debug(error);
-    throw new Error();
-  });
+    throw error;
+  }
 };
 
 const stopTor = async () => {

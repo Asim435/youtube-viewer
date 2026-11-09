@@ -1,24 +1,22 @@
-FROM alpine:edge
+FROM alpine:latest
 
-# Installs latest Chromium (77) package.
-RUN apk add --no-cache \
+# Install runtime packages
+RUN apk update && \
+    apk add --no-cache \
       chromium \
-      nss \
-      freetype \
-      freetype-dev \
-      harfbuzz \
-      ca-certificates \
-      ttf-freefont \
       nodejs \
       npm \
-      tor
+      tor \
+      ca-certificates
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-ENV NODE_ENV production
-ENV YOUTUBE_VIEWER_FORCE_DEBUG false
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV NODE_ENV=production
+ENV YOUTUBE_VIEWER_FORCE_DEBUG=false
 
 # Create app directory
 WORKDIR /app
+
+RUN which chromium-browser || ln -s /usr/bin/chromium /usr/bin/chromium-browser
 
 # Copy app artifacts and dependencies
 COPY ./core ./core 
@@ -30,6 +28,6 @@ COPY ./index.js .
 COPY ./package.json .
 COPY ./urls.txt .
 
-RUN npm install
+RUN npm install --production
 
-CMD ["node", "index" ,"--color=16m"]
+CMD ["node", "index", "--color=16m"]
